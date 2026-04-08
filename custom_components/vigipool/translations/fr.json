@@ -1,0 +1,30 @@
+{
+  "title": "Vigipool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion Vigipool",
+        "description": "Configurez le prefixe MQTT du controleur Vigipool.",
+        "data": {
+          "device_name": "Nom de l'appareil",
+          "topic_prefix": "Prefixe MQTT"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Ce controleur Vigipool est deja configure."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "description": "Modifiez le nom affiche ou le prefixe MQTT.",
+        "data": {
+          "device_name": "Nom de l'appareil",
+          "topic_prefix": "Prefixe MQTT"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "title": "Vigipool",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Vigipool",
+        "description": "Configure the Vigipool MQTT topic prefix.",
+        "data": {
+          "device_name": "Device name",
+          "topic_prefix": "MQTT topic prefix"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This Vigipool controller is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "description": "Update the displayed name or MQTT topic prefix.",
+        "data": {
+          "device_name": "Device name",
+          "topic_prefix": "MQTT topic prefix"
+        }
+      }
+    }
+  }
+}
+
