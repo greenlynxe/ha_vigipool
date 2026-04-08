@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -59,6 +60,14 @@ class VigipoolSensorDescription(SensorEntityDescription):
     value_type: str = "int"
 
 
+@dataclass(frozen=True, kw_only=True)
+class VigipoolMappedSensorDescription(SensorEntityDescription):
+    """Description for a computed Vigipool text sensor."""
+
+    value_fn: Callable[[VigipoolCoordinator], str | None]
+    raw_topic_suffix: str | None = None
+
+
 NUMERIC_SENSOR_DESCRIPTIONS: tuple[VigipoolSensorDescription, ...] = (
     VigipoolSensorDescription(
         key="pool_temperature",
@@ -83,6 +92,7 @@ NUMERIC_SENSOR_DESCRIPTIONS: tuple[VigipoolSensorDescription, ...] = (
         key="filter_state_code",
         name="Filter state code",
         topic_suffix=TOPIC_FILT_STATE,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="error_code",
@@ -139,26 +149,31 @@ NUMERIC_SENSOR_DESCRIPTIONS: tuple[VigipoolSensorDescription, ...] = (
         key="light_type",
         name="Light type",
         topic_suffix=TOPIC_LIGHT_TYPE,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="light_code",
         name="Light code",
         topic_suffix=TOPIC_LIGHT_CODE,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="light_brightness",
         name="Light brightness",
         topic_suffix=TOPIC_LIGHT_BRIGHTNESS,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="light_speed",
         name="Light speed",
         topic_suffix=TOPIC_LIGHT_SPEED,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="aux_type",
         name="Aux type",
         topic_suffix=TOPIC_AUX_TYPE,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     VigipoolSensorDescription(
         key="aux_config",
@@ -234,6 +249,35 @@ TEXT_SENSOR_DESCRIPTIONS: tuple[VigipoolSensorDescription, ...] = (
     ),
 )
 
+MAPPED_SENSOR_DESCRIPTIONS: tuple[VigipoolMappedSensorDescription, ...] = (
+    VigipoolMappedSensorDescription(
+        key="filter_state",
+        name="Filter state",
+        value_fn=lambda coordinator: _describe_filter_state(coordinator),
+        raw_topic_suffix=TOPIC_FILT_STATE,
+    ),
+    VigipoolMappedSensorDescription(
+        key="action",
+        name="Action",
+        value_fn=lambda coordinator: _describe_action(coordinator),
+        raw_topic_suffix=TOPIC_ACTION,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    VigipoolMappedSensorDescription(
+        key="aux_type_name",
+        name="Aux mode",
+        value_fn=lambda coordinator: _describe_aux_type(coordinator),
+        raw_topic_suffix=TOPIC_AUX_TYPE,
+    ),
+    VigipoolMappedSensorDescription(
+        key="frost_free_status",
+        name="Frost free status",
+        value_fn=lambda coordinator: _describe_frost_free(coordinator),
+        raw_topic_suffix=TOPIC_FROST_FREE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+)
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -246,6 +290,10 @@ async def async_setup_entry(
         VigipoolTopicSensor(coordinator, description)
         for description in NUMERIC_SENSOR_DESCRIPTIONS + TEXT_SENSOR_DESCRIPTIONS
     ]
+    entities.extend(
+        VigipoolMappedSensor(coordinator, description)
+        for description in MAPPED_SENSOR_DESCRIPTIONS
+    )
     entities.append(VigipoolRawTopicsSensor(coordinator))
     async_add_entities(entities)
 
@@ -310,9 +358,106 @@ class VigipoolRawTopicsSensor(VigipoolEntity, SensorEntity):
         }
 
 
+class VigipoolMappedSensor(VigipoolEntity, SensorEntity):
+    """Sensor exposing a human-readable Vigipool state."""
+
+    entity_description: VigipoolMappedSensorDescription
+
+    def __init__(
+        self,
+        coordinator: VigipoolCoordinator,
+        description: VigipoolMappedSensorDescription,
+    ) -> None:
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+        self._attr_name = description.name
+
+    @property
+    def available(self) -> bool:
+        """Return availability for the computed sensor."""
+        return self.native_value is not None
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the computed human-readable value."""
+        return self.entity_description.value_fn(self.coordinator)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose the underlying numeric code when available."""
+        raw_topic_suffix = self.entity_description.raw_topic_suffix
+        if raw_topic_suffix is None:
+            return None
+
+        raw_value = self.raw_value(raw_topic_suffix)
+        if raw_value is None:
+            return None
+
+        return {"raw_code": raw_value}
+
+
 def _as_iso(value: datetime | None) -> str | None:
     """Serialize datetimes for HA attributes."""
     if value is None:
         return None
     return value.isoformat()
 
+
+def _describe_filter_state(coordinator: VigipoolCoordinator) -> str | None:
+    """Return a human-readable filtration state."""
+    code = coordinator.get_int(TOPIC_FILT_STATE)
+    if code is None:
+        return None
+
+    flow_on = coordinator.get_int(TOPIC_FLOW_ON)
+    if code == 0:
+        return "Running" if flow_on else "Stopped"
+
+    if code == 1:
+        return "Scheduled"
+    if code == 2:
+        return "Forced"
+    if code == 3:
+        return "Backwash"
+    if code == 4:
+        return "Rinse"
+
+    return f"State {code}"
+
+
+def _describe_action(coordinator: VigipoolCoordinator) -> str | None:
+    """Return a human-readable action state."""
+    code = coordinator.get_int(TOPIC_ACTION)
+    if code is None:
+        return None
+    if code == 0:
+        return "Idle"
+    return f"Action {code}"
+
+
+def _describe_aux_type(coordinator: VigipoolCoordinator) -> str | None:
+    """Return a best-effort auxiliary type label."""
+    code = coordinator.get_int(TOPIC_AUX_TYPE)
+    if code is None:
+        return None
+    if code == 0:
+        return "Disabled"
+    if code == 1:
+        return "Relay"
+    if code == 2:
+        return "Temperature relay"
+    return f"Type {code}"
+
+
+def _describe_frost_free(coordinator: VigipoolCoordinator) -> str | None:
+    """Return a best-effort frost protection label."""
+    code = coordinator.get_int(TOPIC_FROST_FREE)
+    if code is None:
+        return None
+    if code == 0:
+        return "Disabled"
+    if code == 1:
+        return "Enabled"
+    if code == 2:
+        return "Automatic"
+    return f"Mode {code}"
