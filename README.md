@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.1.0` is a first read-only release focused on MQTT state ingestion.
+`0.1.1` is the current read-only release focused on MQTT state ingestion.
 
 Included today:
 
