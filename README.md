@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.1.1` is the current read-only release focused on MQTT state ingestion.
+`0.2.0` is the current release and adds first MQTT controls.
 
 Included today:
 
@@ -17,13 +17,15 @@ Included today:
 - automatic tracking of `.../reported` topics under a configurable device prefix
 - main sensors for temperature, setpoint and diagnostics
 - binary sensors for flow, light, auxiliary relay, cover and connectivity
+- a filtration switch using the Vigipool command topic
+- a pool light entity using the Vigipool command topic
 - one raw diagnostic entity exposing every MQTT topic received for the device
 
 Not included yet:
 
-- MQTT command publishing
 - decoded schedules
-- dedicated `switch`, `light`, `climate` or `select` entities
+- auxiliary relay control
+- dedicated `climate` or `select` entities
 - full `pH / Redox` support
 
 ## What this integration currently covers
@@ -116,6 +118,11 @@ The integration then subscribes to:
 - `Server on`
 - `Winter mode`
 
+### Controls
+
+- `Filtration` switch
+- `Pool light` light entity
+
 ## MQTT model currently assumed
 
 The controller appears to publish topics with a shape close to:
@@ -134,20 +141,20 @@ Useful examples already observed:
 - `s44_w/aux_sched/info/reported`
 - `u32_r/error/info/reported`
 
-The next milestone is to confirm the matching `.../desired` topics before enabling writes.
+The first writable topics now used by the integration are:
+
+- `u16_w/filt_state/info/desired`
+- `u8_w/light_state/info/desired`
 
 ## Known limitations
 
-- no MQTT writes enabled yet
+- auxiliary relay control is not enabled yet
 - schedules are still exposed as raw strings
-- no high-level control entities yet
 - no full support for the separate chemistry module
 
 ## Short roadmap
 
-- confirm writable MQTT topics
-- add filtration control
-- add light control
+- confirm auxiliary writable MQTT topics
 - add auxiliary relay control
 - decode schedules into readable attributes
 

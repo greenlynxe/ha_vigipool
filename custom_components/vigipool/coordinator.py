@@ -104,6 +104,40 @@ class VigipoolCoordinator(DataUpdateCoordinator[VigipoolState]):
             return None
         return value / divisor
 
+    async def async_publish_value(
+        self,
+        desired_topic_suffix: str,
+        payload: str | int,
+        *,
+        optimistic_reported_suffix: str | None = None,
+    ) -> None:
+        """Publish a command and optionally update the local cache optimistically."""
+        topic = f"{self.topic_prefix}/{desired_topic_suffix}"
+        string_payload = str(payload)
+        mqtt.async_publish(
+            self.hass,
+            topic,
+            string_payload,
+            qos=0,
+            retain=False,
+            encoding="utf-8",
+        )
+
+        if optimistic_reported_suffix is not None:
+            self._update_cached_value(optimistic_reported_suffix, string_payload)
+
+    def _update_cached_value(self, topic_suffix: str, payload: str) -> None:
+        """Merge a local optimistic value into the MQTT cache."""
+        values = dict(self.data.topic_values)
+        values[topic_suffix] = payload
+        self.async_set_updated_data(
+            replace(
+                self.data,
+                topic_values=values,
+                last_message=datetime.now(timezone.utc),
+            )
+        )
+
     def _strip_prefix(self, topic: str) -> str | None:
         """Strip the device prefix from an MQTT topic."""
         prefix = f"{self.topic_prefix}/"

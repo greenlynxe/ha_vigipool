@@ -10,6 +10,15 @@ CONF_DEVICE_NAME = "device_name"
 DEFAULT_DEVICE_NAME = "Vigipool"
 DEFAULT_TOPIC_PREFIX = "tild_30C9229A50C4"
 
+FILTER_STATE_OFF = 0
+FILTER_STATE_SCHEDULED = 1
+FILTER_STATE_FORCED = 2
+FILTER_STATE_BACKWASH = 3
+FILTER_STATE_RINSE = 4
+
+LIGHT_STATE_OFF = 0
+LIGHT_STATE_ON = 1
+
 TOPIC_POOL_TEMPERATURE = "u16_r/value_temp/value/reported"
 TOPIC_TEMPERATURE_SETPOINT = "u16_w/consigne_temp/consigne/reported"
 TOPIC_FLOW_ON = "u8_r/flow_on/value/reported"
@@ -44,3 +53,5 @@ TOPIC_BACKWASH = "u8_w/backwash/info/reported"
 TOPIC_SERIAL = "s33_r/serial_num/info/reported"
 TOPIC_DEVICE_ID = "s44_r/device_id/info/reported"
 
+TOPIC_FILT_STATE_DESIRED = "u16_w/filt_state/info/desired"
+TOPIC_LIGHT_STATE_DESIRED = "u8_w/light_state/info/desired"
