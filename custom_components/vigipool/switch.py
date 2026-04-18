@@ -64,7 +64,7 @@ class VigipoolFiltrationSwitch(VigipoolEntity, SwitchEntity):
     """Switch to force filtration on or stop it."""
 
     _attr_name = "Filtration"
-    _attr_icon = "mdi:pool-pump"
+    _attr_icon = "mdi:pump"
 
     def __init__(self, coordinator: VigipoolCoordinator) -> None:
         super().__init__(coordinator, "filtration_switch")

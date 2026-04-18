@@ -19,7 +19,12 @@ from .const import (
     TOPIC_FILT_SCHEDULE,
     TOPIC_FILT_SCHEDULE_DESIRED,
 )
-from .schedule import VigipoolFilterSchedule, decode_filter_schedule_payload, encode_filter_schedule_payload
+from .schedule import (
+    VigipoolFilterProgram,
+    VigipoolFilterSchedule,
+    decode_filter_schedule_payload,
+    encode_filter_schedule_payload,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -115,7 +120,9 @@ class VigipoolCoordinator(DataUpdateCoordinator[VigipoolState]):
         """Return the decoded filtration schedule."""
         payload = self.get(TOPIC_FILT_SCHEDULE)
         if payload is None:
-            return None
+            return VigipoolFilterSchedule(
+                programs=[VigipoolFilterProgram(), VigipoolFilterProgram()]
+            )
         return decode_filter_schedule_payload(payload)
 
     async def async_publish_value(

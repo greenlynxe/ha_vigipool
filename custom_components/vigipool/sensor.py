@@ -258,6 +258,7 @@ MAPPED_SENSOR_DESCRIPTIONS: tuple[VigipoolMappedSensorDescription, ...] = (
     VigipoolMappedSensorDescription(
         key="filter_state",
         name="Filter state",
+        icon="mdi:pump",
         value_fn=lambda coordinator: _describe_filter_state(coordinator),
         raw_topic_suffix=TOPIC_FILT_STATE,
     ),
