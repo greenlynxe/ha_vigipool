@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -50,6 +51,8 @@ async def async_setup_entry(
 
 class VigipoolScheduleSwitch(VigipoolEntity, SwitchEntity):
     """Base class for switches mutating the filtration schedule."""
+
+    _attr_entity_category = EntityCategory.CONFIG
 
     def _get_schedule(self) -> VigipoolFilterSchedule | None:
         return self.coordinator.get_filter_schedule()
@@ -126,7 +129,7 @@ class VigipoolProgramEnabledSwitch(VigipoolScheduleSwitch):
     def __init__(self, coordinator: VigipoolCoordinator, program_index: int) -> None:
         super().__init__(coordinator, f"filter_program_{program_index + 1}_enabled")
         self.program_index = program_index
-        self._attr_name = f"Filter program {program_index + 1}"
+        self._attr_name = f"Program {program_index + 1} enabled"
         self._attr_icon = "mdi:calendar-check"
 
     @property
@@ -162,7 +165,7 @@ class VigipoolProgramThermoregulatedSwitch(VigipoolScheduleSwitch):
             coordinator, f"filter_program_{program_index + 1}_thermoregulated"
         )
         self.program_index = program_index
-        self._attr_name = f"Filter program {program_index + 1} thermoregulated"
+        self._attr_name = f"Program {program_index + 1} thermoregulated"
         self._attr_icon = "mdi:thermometer-auto"
 
     @property
@@ -207,7 +210,7 @@ class VigipoolProgramDaySwitch(VigipoolScheduleSwitch):
         )
         self.program_index = program_index
         self.day_bit = bit
-        self._attr_name = f"Filter program {program_index + 1} {day_label}"
+        self._attr_name = f"Program {program_index + 1} {day_label}"
         self._attr_icon = "mdi:calendar"
 
     @property

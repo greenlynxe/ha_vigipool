@@ -6,6 +6,7 @@ from datetime import time
 
 from homeassistant.components.time import TimeEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -51,6 +52,8 @@ async def async_setup_entry(
 class VigipoolProgramSlotTimeEntity(VigipoolEntity, TimeEntity):
     """One slot boundary in the filtration schedule."""
 
+    _attr_entity_category = EntityCategory.CONFIG
+
     def __init__(
         self,
         coordinator: VigipoolCoordinator,
@@ -68,14 +71,27 @@ class VigipoolProgramSlotTimeEntity(VigipoolEntity, TimeEntity):
         self.slot_index = slot_index
         self.is_start = is_start
         self._attr_name = (
-            f"Filter program {program_index + 1} slot {slot_index + 1} {suffix}"
+            f"Program {program_index + 1} slot {slot_index + 1} {suffix}"
         )
         self._attr_icon = "mdi:clock-outline"
 
     @property
     def available(self) -> bool:
         """Return availability for the slot boundary."""
-        return self.coordinator.get_filter_schedule() is not None
+        schedule = self.coordinator.get_filter_schedule()
+        if schedule is None:
+            return False
+
+        slots = schedule.programs[self.program_index].slots
+        if slots[self.slot_index] is not None:
+            return True
+
+        try:
+            next_empty = slots.index(None)
+        except ValueError:
+            return False
+
+        return self.slot_index == next_empty
 
     @property
     def native_value(self) -> time:
