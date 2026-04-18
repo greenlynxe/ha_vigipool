@@ -12,7 +12,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import CONF_DEVICE_NAME, CONF_TOPIC_PREFIX, DOMAIN
+from .const import (
+    CONF_DEVICE_NAME,
+    CONF_TOPIC_PREFIX,
+    DOMAIN,
+    TOPIC_FILT_SCHEDULE,
+    TOPIC_FILT_SCHEDULE_DESIRED,
+)
+from .schedule import VigipoolFilterSchedule, decode_filter_schedule_payload, encode_filter_schedule_payload
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,6 +111,13 @@ class VigipoolCoordinator(DataUpdateCoordinator[VigipoolState]):
             return None
         return value / divisor
 
+    def get_filter_schedule(self) -> VigipoolFilterSchedule | None:
+        """Return the decoded filtration schedule."""
+        payload = self.get(TOPIC_FILT_SCHEDULE)
+        if payload is None:
+            return None
+        return decode_filter_schedule_payload(payload)
+
     async def async_publish_value(
         self,
         desired_topic_suffix: str,
@@ -125,6 +139,15 @@ class VigipoolCoordinator(DataUpdateCoordinator[VigipoolState]):
 
         if optimistic_reported_suffix is not None:
             self._update_cached_value(optimistic_reported_suffix, string_payload)
+
+    async def async_set_filter_schedule(self, schedule: VigipoolFilterSchedule) -> None:
+        """Publish an updated filtration schedule."""
+        payload = encode_filter_schedule_payload(schedule)
+        await self.async_publish_value(
+            TOPIC_FILT_SCHEDULE_DESIRED,
+            payload,
+            optimistic_reported_suffix=TOPIC_FILT_SCHEDULE,
+        )
 
     def _update_cached_value(self, topic_suffix: str, payload: str) -> None:
         """Merge a local optimistic value into the MQTT cache."""

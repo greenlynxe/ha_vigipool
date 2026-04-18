@@ -53,6 +53,7 @@ from .const import (
 )
 from .coordinator import VigipoolCoordinator
 from .entity import VigipoolEntity
+from .schedule import decode_days, decode_filter_schedule_payload, format_slot_index
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -384,12 +385,12 @@ class VigipoolFilterScheduleSensor(VigipoolEntity, SensorEntity):
         if raw_value is None:
             return None
 
-        decoded = _decode_schedule_payload(raw_value)
+        decoded = decode_filter_schedule_payload(raw_value)
         if decoded is None:
             return None
 
-        active_slots = decoded["active_slots"]
-        total_slots = decoded["slot_count"]
+        active_slots = sum(1 for program in decoded.programs if program.enabled)
+        total_slots = len(decoded.programs)
         if active_slots == 0:
             return "No active slots"
         return f"{active_slots}/{total_slots} active slot(s)"
@@ -401,16 +402,37 @@ class VigipoolFilterScheduleSensor(VigipoolEntity, SensorEntity):
         if raw_value is None:
             return None
 
-        decoded = _decode_schedule_payload(raw_value)
+        decoded = decode_filter_schedule_payload(raw_value)
         if decoded is None:
             return {"raw_payload": raw_value}
 
         return {
             "raw_payload": raw_value,
-            "slot_count": decoded["slot_count"],
-            "active_slots": decoded["active_slots"],
-            "programs": decoded["programs"],
-            "remaining_hex": decoded["remaining_hex"],
+            "slot_count": len(decoded.programs),
+            "active_slots": sum(1 for program in decoded.programs if program.enabled),
+            "programs": [
+                {
+                    "slot": index + 1,
+                    "enabled": program.enabled,
+                    "days_mask": f"0x{program.days_mask:02X}",
+                    "days": decode_days(program.days_mask),
+                    "thermoregulated": program.thermoregulated,
+                    "sequence_count": len([slot for slot in program.slots if slot is not None]),
+                    "sequences": [
+                        {
+                            "sequence": slot_index + 1,
+                            "start_index": slot.start_index,
+                            "end_index": slot.end_index,
+                            "start": format_slot_index(slot.start_index),
+                            "end": format_slot_index(slot.end_index),
+                        }
+                        for slot_index, slot in enumerate(program.slots)
+                        if slot is not None
+                    ],
+                }
+                for index, program in enumerate(decoded.programs)
+            ],
+            "remaining_hex": decoded.remaining_hex,
         }
 
 
@@ -517,90 +539,3 @@ def _describe_frost_free(coordinator: VigipoolCoordinator) -> str | None:
     if code == 2:
         return "Automatic"
     return f"Mode {code}"
-
-
-def _decode_schedule_payload(payload: str) -> dict[str, Any] | None:
-    """Decode a Vigipool schedule payload into readable slot data."""
-    try:
-        raw = bytes.fromhex(payload)
-    except ValueError:
-        return None
-
-    if not raw:
-        return None
-
-    slot_count = raw[0]
-    cursor = 1
-    programs: list[dict[str, Any]] = []
-
-    for slot_index in range(slot_count):
-        if cursor + 4 > len(raw):
-            break
-
-        day_mask = raw[cursor]
-        thermoregulated_flag = raw[cursor + 1]
-        sequence_count = int.from_bytes(raw[cursor + 2 : cursor + 4], "big")
-        cursor += 4
-
-        sequences: list[dict[str, str | int]] = []
-        for sequence_index in range(sequence_count):
-            if cursor + 2 > len(raw):
-                cursor = len(raw)
-                break
-
-            start_index = raw[cursor]
-            end_index = raw[cursor + 1]
-            cursor += 2
-            sequences.append(
-                {
-                    "sequence": sequence_index + 1,
-                    "start_index": start_index,
-                    "end_index": end_index,
-                    "start": _format_quarter_hour(start_index),
-                    "end": _format_quarter_hour(end_index),
-                }
-            )
-
-        enabled = bool(day_mask & 0x80)
-        programs.append(
-            {
-                "slot": slot_index + 1,
-                "enabled": enabled,
-                "day_mask": f"0x{day_mask:02X}",
-                "days_mask": f"0x{day_mask & 0x7F:02X}",
-                "days": _decode_days(day_mask & 0x7F),
-                "thermoregulated": thermoregulated_flag == 1,
-                "mode_code": thermoregulated_flag,
-                "sequence_count": sequence_count,
-                "sequences": sequences,
-            }
-        )
-
-    return {
-        "slot_count": slot_count,
-        "active_slots": sum(1 for program in programs if program["enabled"]),
-        "programs": programs,
-        "remaining_hex": raw[cursor:].hex().upper(),
-    }
-
-
-def _decode_days(mask: int) -> list[str]:
-    """Decode the day bitmask used by Vigipool schedules."""
-    day_map = (
-        (0x01, "Sunday"),
-        (0x02, "Monday"),
-        (0x04, "Tuesday"),
-        (0x08, "Wednesday"),
-        (0x10, "Thursday"),
-        (0x20, "Friday"),
-        (0x40, "Saturday"),
-    )
-    return [label for bit, label in day_map if mask & bit]
-
-
-def _format_quarter_hour(value: int) -> str:
-    """Format a quarter-hour slot index as HH:MM."""
-    total_minutes = value * 15
-    hours = total_minutes // 60
-    minutes = total_minutes % 60
-    return f"{hours:02d}:{minutes:02d}"

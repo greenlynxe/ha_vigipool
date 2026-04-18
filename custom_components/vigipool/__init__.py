@@ -11,6 +11,8 @@ from .coordinator import VigipoolCoordinator
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.TIME,
     Platform.SENSOR,
     Platform.SWITCH,
     Platform.LIGHT,

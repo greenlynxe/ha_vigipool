@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.2.2` is the current release and adds first MQTT controls plus a decoded filtration schedule.
+`0.3.0` is the current release and adds filtration schedule controls.
 
 Included today:
 
@@ -20,6 +20,11 @@ Included today:
 - binary sensors for flow, light, auxiliary relay, cover and connectivity
 - a filtration switch using the Vigipool command topic
 - a pool light entity using the Vigipool command topic
+- filtration program switches for programs 1 and 2
+- thermoregulated mode switches for both filtration programs
+- per-day switches for both filtration programs
+- start/end time entities for 3 slots per filtration program
+- clear-slot buttons for all filtration slots
 - one raw diagnostic entity exposing every MQTT topic received for the device
 
 Not included yet:
@@ -124,6 +129,11 @@ The integration then subscribes to:
 
 - `Filtration` switch
 - `Pool light` light entity
+- `Filter program 1` / `Filter program 2` switches
+- thermoregulated switches for both programs
+- day switches for both programs
+- 3 start/end slot pairs per program
+- clear-slot buttons per slot
 
 ## MQTT model currently assumed
 
@@ -156,14 +166,14 @@ Observed filtration values on the reference controller:
 ## Known limitations
 
 - auxiliary relay control is not enabled yet
-- schedules are still exposed as raw strings
+- light and auxiliary schedules are still exposed as raw strings
 - no full support for the separate chemistry module
 
 ## Short roadmap
 
 - confirm auxiliary writable MQTT topics
 - add auxiliary relay control
-- decode schedules into readable attributes
+- add write support for light and auxiliary schedules
 
 ## Project layout
 
