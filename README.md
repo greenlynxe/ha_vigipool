@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.2.0` is the current release and adds first MQTT controls.
+`0.2.1` is the current release and adds first MQTT controls.
 
 Included today:
 
@@ -145,6 +145,11 @@ The first writable topics now used by the integration are:
 
 - `u16_w/filt_state/info/desired`
 - `u8_w/light_state/info/desired`
+
+Observed filtration values on the reference controller:
+
+- `1` for forced filtration on
+- `0` for filtration off
 
 ## Known limitations
 

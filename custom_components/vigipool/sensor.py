@@ -20,6 +20,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
+    FILTER_STATE_FORCED,
+    FILTER_STATE_OFF,
+    FILTER_STATE_SCHEDULED,
     TOPIC_ACTION,
     TOPIC_AUX_CONFIG,
     TOPIC_AUX_MIN_TEMP,
@@ -411,13 +414,13 @@ def _describe_filter_state(coordinator: VigipoolCoordinator) -> str | None:
         return None
 
     flow_on = coordinator.get_int(TOPIC_FLOW_ON)
-    if code == 0:
+    if code == FILTER_STATE_OFF:
         return "Running" if flow_on else "Stopped"
 
-    if code == 1:
-        return "Scheduled"
-    if code == 2:
+    if code == FILTER_STATE_FORCED:
         return "Forced"
+    if code == FILTER_STATE_SCHEDULED:
+        return "Scheduled"
     if code == 3:
         return "Backwash"
     if code == 4:
