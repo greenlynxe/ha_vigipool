@@ -53,7 +53,13 @@ from .const import (
 )
 from .coordinator import VigipoolCoordinator
 from .entity import VigipoolEntity
-from .schedule import decode_days, decode_filter_schedule_payload, format_slot_index
+from .schedule import (
+    decode_days,
+    decode_filter_schedule_payload,
+    format_days_mask,
+    format_slot_index,
+    format_slots,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -300,6 +306,8 @@ async def async_setup_entry(
         VigipoolMappedSensor(coordinator, description)
         for description in MAPPED_SENSOR_DESCRIPTIONS
     )
+    entities.append(VigipoolProgramScheduleSensor(coordinator, 0))
+    entities.append(VigipoolProgramScheduleSensor(coordinator, 1))
     entities.append(VigipoolFilterScheduleSensor(coordinator))
     entities.append(VigipoolRawTopicsSensor(coordinator))
     async_add_entities(entities)
@@ -434,6 +442,51 @@ class VigipoolFilterScheduleSensor(VigipoolEntity, SensorEntity):
                 for index, program in enumerate(decoded.programs)
             ],
             "remaining_hex": decoded.remaining_hex,
+        }
+
+
+class VigipoolProgramScheduleSensor(VigipoolEntity, SensorEntity):
+    """Human-readable schedule summary for one filtration program."""
+
+    def __init__(self, coordinator: VigipoolCoordinator, program_index: int) -> None:
+        super().__init__(coordinator, f"filter_program_{program_index + 1}_summary")
+        self.program_index = program_index
+        self._attr_name = f"Program {program_index + 1} schedule"
+        self._attr_icon = "mdi:calendar-clock"
+
+    @property
+    def available(self) -> bool:
+        """Return availability for the schedule summary."""
+        return self.coordinator.get_filter_schedule() is not None
+
+    @property
+    def native_value(self) -> str:
+        """Return a compact human-readable schedule summary."""
+        schedule = self.coordinator.get_filter_schedule()
+        if schedule is None:
+            return "Unavailable"
+
+        program = schedule.programs[self.program_index]
+        if not program.enabled:
+            return "Disabled"
+
+        days = format_days_mask(program.days_mask) or "No days"
+        slots = format_slots(program.slots) or "No slots"
+        return f"{days} | {slots}"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose structured schedule details."""
+        schedule = self.coordinator.get_filter_schedule()
+        if schedule is None:
+            return {}
+
+        program = schedule.programs[self.program_index]
+        return {
+            "enabled": program.enabled,
+            "days": format_days_mask(program.days_mask),
+            "thermoregulated": program.thermoregulated,
+            "slots": format_slots(program.slots),
         }
 
 

@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.3.0` is the current release and adds filtration schedule controls.
+`0.4.0` is the current release and adds a cleaner compact filtration schedule editor.
 
 Included today:
 
@@ -22,16 +22,14 @@ Included today:
 - a pool light entity using the Vigipool command topic
 - filtration program switches for programs 1 and 2
 - thermoregulated mode switches for both filtration programs
-- per-day switches for both filtration programs
-- start/end time entities for 3 slots per filtration program
-- clear-slot buttons for all filtration slots
+- compact editable `days` text fields for both programs
+- compact editable `slots` text fields for both programs
+- readable schedule summary sensors for both programs
 - one raw diagnostic entity exposing every MQTT topic received for the device
 
 Not included yet:
 
-- decoded schedules
 - auxiliary relay control
-- dedicated `climate` or `select` entities
 - full `pH / Redox` support
 
 ## What this integration currently covers
@@ -109,6 +107,8 @@ The integration then subscribes to:
 - `Backwash code`
 - `Filter schedule raw`
 - `Filter schedule`
+- `Program 1 schedule`
+- `Program 2 schedule`
 - `Light schedule raw`
 - `Aux schedule raw`
 - `Serial number raw`
@@ -129,11 +129,10 @@ The integration then subscribes to:
 
 - `Filtration` switch
 - `Pool light` light entity
-- `Filter program 1` / `Filter program 2` switches
+- `Program 1 enabled` / `Program 2 enabled` switches
 - thermoregulated switches for both programs
-- day switches for both programs
-- 3 start/end slot pairs per program
-- clear-slot buttons per slot
+- `Program 1 days` / `Program 2 days` text entities
+- `Program 1 slots` / `Program 2 slots` text entities
 
 ## MQTT model currently assumed
 

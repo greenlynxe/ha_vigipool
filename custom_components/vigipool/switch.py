@@ -20,7 +20,7 @@ from .const import (
 )
 from .coordinator import VigipoolCoordinator
 from .entity import VigipoolEntity
-from .schedule import DAY_SWITCHES, VigipoolFilterSchedule
+from .schedule import VigipoolFilterSchedule
 
 
 async def async_setup_entry(
@@ -35,16 +35,6 @@ async def async_setup_entry(
     for program_index in range(2):
         entities.append(VigipoolProgramEnabledSwitch(coordinator, program_index))
         entities.append(VigipoolProgramThermoregulatedSwitch(coordinator, program_index))
-        for bit, key, label in DAY_SWITCHES:
-            entities.append(
-                VigipoolProgramDaySwitch(
-                    coordinator,
-                    program_index,
-                    bit=bit,
-                    day_key=key,
-                    day_label=label,
-                )
-            )
 
     async_add_entities(entities)
 
@@ -192,49 +182,3 @@ class VigipoolProgramThermoregulatedSwitch(VigipoolScheduleSwitch):
         schedule.programs[self.program_index].thermoregulated = False
         await self.coordinator.async_set_filter_schedule(schedule)
 
-
-class VigipoolProgramDaySwitch(VigipoolScheduleSwitch):
-    """Toggle one weekday for one filtration program."""
-
-    def __init__(
-        self,
-        coordinator: VigipoolCoordinator,
-        program_index: int,
-        *,
-        bit: int,
-        day_key: str,
-        day_label: str,
-    ) -> None:
-        super().__init__(
-            coordinator, f"filter_program_{program_index + 1}_{day_key}"
-        )
-        self.program_index = program_index
-        self.day_bit = bit
-        self._attr_name = f"Program {program_index + 1} {day_label}"
-        self._attr_icon = "mdi:calendar"
-
-    @property
-    def is_on(self) -> bool | None:
-        """Return whether the weekday is selected."""
-        schedule = self._get_schedule()
-        if schedule is None:
-            return None
-        return bool(schedule.programs[self.program_index].days_mask & self.day_bit)
-
-    async def async_turn_on(self, **kwargs) -> None:
-        """Enable the weekday for this program."""
-        schedule = self._get_schedule()
-        if schedule is None:
-            return
-        program = schedule.programs[self.program_index]
-        program.days_mask |= self.day_bit
-        await self.coordinator.async_set_filter_schedule(schedule)
-
-    async def async_turn_off(self, **kwargs) -> None:
-        """Disable the weekday for this program."""
-        schedule = self._get_schedule()
-        if schedule is None:
-            return
-        program = schedule.programs[self.program_index]
-        program.days_mask &= ~self.day_bit
-        await self.coordinator.async_set_filter_schedule(schedule)
