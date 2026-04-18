@@ -8,7 +8,7 @@ This project currently targets a controller visible under the MQTT prefix:
 
 ## Current status
 
-`0.2.1` is the current release and adds first MQTT controls.
+`0.2.2` is the current release and adds first MQTT controls plus a decoded filtration schedule.
 
 Included today:
 
@@ -16,6 +16,7 @@ Included today:
 - native subscription through Home Assistant's built-in `mqtt` integration
 - automatic tracking of `.../reported` topics under a configurable device prefix
 - main sensors for temperature, setpoint and diagnostics
+- a decoded filtration schedule sensor with readable slot attributes
 - binary sensors for flow, light, auxiliary relay, cover and connectivity
 - a filtration switch using the Vigipool command topic
 - a pool light entity using the Vigipool command topic
@@ -102,6 +103,7 @@ The integration then subscribes to:
 - `Frost free mode`
 - `Backwash code`
 - `Filter schedule raw`
+- `Filter schedule`
 - `Light schedule raw`
 - `Aux schedule raw`
 - `Serial number raw`
